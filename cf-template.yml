@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: |
+  This CloudFormation template launches an EC2 instance, with an SG allowing ports 22 and 80. It installs the Apache web server and serves a static website.
+Resources:
+  WebSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable 22, 80.
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+  MyKeyPair:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: rafe-4783647378dhsjahfjsh
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: !Ref MyKeyPair
+      ImageId: ami-08a52ddb321b32a8c
+      InstanceType: t2.micro  # Corrected instance type name
+      SecurityGroupIds:
+        - !Ref WebSecurityGroup
+      UserData: !Base64 |
+        #!/bin/bash
+        yum update -y
+        yum install httpd -y
+        FOLDER="https://raw.githubusercontent.com/bluehackrafestefano/Project-101-kittens-carousel-static-website-ec2-CF/main/static-web"
+        cd /var/www/html
+        wget ${FOLDER}/index.html
+        wget ${FOLDER}/cat0.jpg
+        wget ${FOLDER}/cat1.jpg
+        wget ${FOLDER}/cat2.jpg
+        wget ${FOLDER}/cat3.png
+        wget ${FOLDER}/clarusway.png
+        systemctl start httpd
+        systemctl enable httpd
+      Tags:
+        - Key: Name
+          Value: rafe-InstancefromCloudformation
+Outputs:
+  WebSiteDNSLink:
+    Value: !Sub
+      - http://${PublicAddress}
+      - PublicAddress: !GetAtt EC2Instance.PublicDnsName
+    Description: Application link.
